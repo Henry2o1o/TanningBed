@@ -1,8 +1,31 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFF3B0" android:pathData="M54,18a17,17 0,1 0,0.1 0z" />
-    <path android:fillColor="#FFF3B0" android:pathData="M51,6h6v8h-6zM51,94h6v8h-6zM6,51h8v6h-8zM94,51h8v6h-8zM20,23l4,-4 7,7 -4,4zM77,82l4,-4 7,7 -4,4zM81,19l4,4 -7,7 -4,-4zM24,78l4,4 -7,7 -4,-4z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M32,47h44a5,5 0,0 1,5 5v29a5,5 0,0 1,-5 5h-44a5,5 0,0 1,-5 -5v-29a5,5 0,0 1,5 -5z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M45,39h18v7h-18z" />
-    <path android:fillColor="#1F7A4D" android:pathData="M36,54h10v25h-10zM50,54h10v25h-10zM64,54h10v25h-10z" />
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Sun and rays -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFD34F"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M27,17 L27,21 M27,45 L27,49 M9,33 L14,33 M40,33 L45,33 M14,20 L18,24 M36,42 L40,46 M14,46 L18,42 M36,24 L40,20" />
+    <path android:fillColor="#FFC83D" android:pathData="M27,22 A11,11 0,1 0,27.1 22 Z" />
+    <path android:fillColor="#FFF2A6" android:pathData="M24,27 A6,6 0,1 0,24.1 27 Z" />
+
+    <!-- House body -->
+    <path android:fillColor="#EAF6F8" android:pathData="M29,52 L53,33 L79,52 L79,80 Q79,84 75,84 L33,84 Q29,84 29,80 Z" />
+    <path android:fillColor="#B9DCE6" android:pathData="M53,53 L79,52 L79,80 Q79,84 75,84 L53,84 Z" />
+    <path android:fillColor="#19364A" android:pathData="M46,65 Q46,62 49,62 L58,62 Q61,62 61,65 L61,84 L46,84 Z" />
+    <path android:fillColor="#FFD66B" android:pathData="M34,61 L43,61 L43,71 L34,71 Z" />
+
+    <!-- Bold roof and solar module -->
+    <path android:fillColor="#102A42" android:pathData="M19,53 L49,29 Q53,26 57,29 L88,52 L83,59 L53,37 L24,60 Z" />
+    <path android:fillColor="#0878B8" android:pathData="M49,37 L63,32 L79,44 L64,50 Z" />
+    <path android:fillColor="#37BDF2" android:pathData="M50,39 L64,34 L64,37 L51,42 Z M65,35 L77,44 L74,45 L63,37 Z M57,36 L69,46 L67,47 L55,37 Z" />
+
+    <!-- Battery badge with lightning bolt -->
+    <path android:fillColor="#19D89B" android:pathData="M67,56 L70,56 L70,53 L77,53 L77,56 L80,56 Q82,56 82,59 L82,75 Q82,78 80,78 L67,78 Q65,78 65,75 L65,59 Q65,56 67,56 Z" />
+    <path android:fillColor="#063B38" android:pathData="M75,59 L70,67 L74,67 L71,73 L78,64 L74,64 Z" />
 </vector>
