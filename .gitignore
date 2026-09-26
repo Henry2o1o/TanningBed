@@ -1,0 +1,11 @@
+.gradle/
+.gradle-local/
+build/
+app/build/
+work/
+outputs/*.apk
+outputs/*.zip
+local.properties
+*.iml
+
+SolarbankLive_Quellcode_und_APKs_Backup_*.zip
