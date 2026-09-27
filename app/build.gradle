@@ -10,7 +10,23 @@ android {
         applicationId 'de.codex.solarbanklive'
         minSdk 26
         targetSdk 35
-        versionCode 65
-        versionName '1.64'
+        versionCode 66
+        versionName '1.65'
+    }
+
+    buildFeatures { buildConfig true }
+
+    flavorDimensions 'layout'
+    productFlavors {
+        full {
+            dimension 'layout'
+            buildConfigField 'boolean', 'SIMPLE_OVERVIEW', 'false'
+        }
+        overview {
+            dimension 'layout'
+            applicationIdSuffix '.overview'
+            versionNameSuffix '-overview'
+            buildConfigField 'boolean', 'SIMPLE_OVERVIEW', 'true'
+        }
     }
 }
