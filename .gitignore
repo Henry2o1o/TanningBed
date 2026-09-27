@@ -1,5 +1,6 @@
 .gradle/
 .gradle-local/
+.gradle-cache/
 build/
 app/build/
 work/
