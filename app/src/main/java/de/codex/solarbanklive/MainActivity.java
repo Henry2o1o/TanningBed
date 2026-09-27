@@ -361,6 +361,7 @@ public class MainActivity extends Activity {
         else if(k.contains("temperature")||k.equals("temp")){n=parseNumber(rawValue,Double.NaN);if(Double.isNaN(n)||n< -40||n>100)return null;label="Temperatur";unit="°C";}
         else if(k.contains("frequency")){label="Frequenz";unit="Hz";}
         else if(k.contains("powerfactor")||k.equals("pf")){label="Leistungsfaktor";unit="%";}
+        else if(k.equals("energysinceboot")){n=parseNumber(rawValue,Double.NaN);if(Double.isNaN(n))return null;return new String[]{"Energie seit Start",String.format(Locale.GERMANY,"%.2f kWh",n/3_600_000d)};}
         else if(k.contains("energy")||k.contains("consumption")){label=k.contains("today")||k.contains("daily")?"Energie heute":k.contains("total")||k.contains("cumulative")?"Energie gesamt":"Energie";unit=k.contains("kwh")?"kWh":k.contains("wh")?"Wh":"kWh";}
         else if(k.contains("percent")||k.contains("percentage")){label="Prozent";unit="%";}
         else if(k.equals("gridtohomepower")){label="Netzbezug";unit="W";}

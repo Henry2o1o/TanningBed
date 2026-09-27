@@ -140,6 +140,7 @@ public final class SimpleOverviewActivity extends Activity {
         if(k.contains("voltage")||k.endsWith("volt"))return prettyKey(rawKey)+"  "+String.format(Locale.GERMANY,"%.1f V",n);
         if(k.contains("current")||k.endsWith("amp"))return prettyKey(rawKey)+"  "+String.format(Locale.GERMANY,"%.2f A",n);
         if(k.contains("temperature")||k.equals("temp"))return "Temperatur  "+String.format(Locale.GERMANY,"%.1f °C",n);
+        if(k.equals("energysinceboot")){return "Energie seit Start  "+String.format(Locale.GERMANY,"%.2f kWh",n/3_600_000d);}
         if(k.contains("energy")||k.contains("consumption"))return prettyKey(rawKey)+"  "+String.format(Locale.GERMANY,"%.2f %s",n,k.contains("wh")&&!k.contains("kwh")?"Wh":"kWh");
         if(k.contains("powerfactor"))return "Leistungsfaktor  "+String.format(Locale.GERMANY,"%.2f",n);
         if(k.contains("frequency"))return "Frequenz  "+String.format(Locale.GERMANY,"%.1f Hz",n);
