@@ -125,7 +125,15 @@ final class AnkerMqttLiveClient {
         HashMap<String,Double> out=new HashMap<>();int i=9,end=b.length-1;
         while(i+2<=end){int id=b[i++]&255,len=b[i++]&255;if(len<1||i+len>end)break;int typ;int count;if(len==1){typ=0;count=1;}else{typ=b[i++]&255;count=len-1;}if(count<=0||i+count>end)break;long unsigned=0;for(int j=0;j<Math.min(count,8);j++)unsigned|=((long)b[i+j]&255)<<(8*j);long signed=unsigned;if(count<8&&(b[i+count-1]&0x80)!=0)signed|=(-1L)<<(count*8);double value;
             if(typ==2||typ==3)value=(double)signed;else if(typ==5&&count==4)value=ByteBuffer.wrap(b,i,count).order(ByteOrder.LITTLE_ENDIAN).getFloat();else value=(double)unsigned;
-            String key=String.format(Locale.ROOT,"%02x",id);String name=fieldName(pn,type,key);if(name!=null){double factor=fieldFactor(pn,key);out.put(name,value*factor);}i+=count;
+            String key=String.format(Locale.ROOT,"%02x",id);
+            boolean pvChannel=pn.equals("AE103")&&key.matches("c[6-9]");
+            if(pvChannel&&type!=0x0405){i+=count;continue;}
+            String name=fieldName(pn,type,key);
+            if(name!=null){
+                if(pvChannel&&(typ!=5||count!=4||!Double.isFinite(value)||value<0||value>5000))value=-1d;
+                double factor=fieldFactor(pn,key);out.put(name,value*factor);
+            }
+            i+=count;
         }
         return out;
     }
@@ -136,7 +144,7 @@ final class AnkerMqttLiveClient {
         // byte IDs seen on older models are not safe SOC/temperature mappings
         // here; treating the entire nested field as a number produced huge,
         // rapidly changing readings. Keep only mappings validated for AE103.
-        if(pn.equals("AE103")){switch(key){case "ab":return "photovoltaic_power";case "ac":return "battery_power_signed";case "ad":return "output_power";case "ae":return "ac_output_power_signed";case "b0":return "pv_yield";case "b1":return "charged_energy";case "b2":return "discharged_energy";case "b4":return "grid_export_energy";case "c4":return "grid_power_signed";case "c5":return "home_demand";case "c6":return "pv_1_power";case "c7":return "pv_2_power";case "c8":return "pv_3_power";case "c9":return "pv_4_power";}}
+        if(pn.equals("AE103")){switch(key){case "ab":return "photovoltaic_power";case "ac":return "battery_power_signed";case "ad":return "output_power";case "ae":return "ac_output_power_signed";case "b0":return "pv_yield";case "b1":return "charged_energy";case "b2":return "discharged_energy";case "b4":return "grid_export_energy";case "c4":return "grid_power_signed";case "c5":return "home_demand";case "c6":return type==0x0405?"pv_1_power":null;case "c7":return type==0x0405?"pv_2_power":null;case "c8":return type==0x0405?"pv_3_power":null;case "c9":return type==0x0405?"pv_4_power":null;}}
         return null;
     }
     private double fieldFactor(String pn,String key){if(pn.equals("A17X8")){if(key.equals("a8"))return .1;if(key.equals("a9"))return .01;if(key.equals("aa"))return .1;if(key.equals("ab"))return .001;}return 1;}
