@@ -89,7 +89,7 @@ public final class BackgroundSyncService extends Service {
     private void stopMonitoring(){stopped=true;handler.removeCallbacks(poll);if(mqttClient!=null)mqttClient.stop();stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();}
     private void createChannel(){if(Build.VERSION.SDK_INT>=26){NotificationChannel c=new NotificationChannel(CHANNEL,"Solarbank Hintergrunddaten",NotificationManager.IMPORTANCE_LOW);c.setDescription("Zeigt an, wenn Solarbank Live im Hintergrund aktualisiert.");getSystemService(NotificationManager.class).createNotificationChannel(c);}}
     private Notification notification(String text){
-        Class<?> landing=BuildConfig.SIMPLE_OVERVIEW?SimpleOverviewActivity.class:MainActivity.class;Intent open=new Intent(this,landing);PendingIntent openPending=PendingIntent.getActivity(this,1,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        Intent open=new Intent(this,MainActivity.class);PendingIntent openPending=PendingIntent.getActivity(this,1,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Intent stop=new Intent(this,BackgroundSyncService.class).putExtra("stop",true);PendingIntent stopPending=PendingIntent.getService(this,2,stop,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder b=Build.VERSION.SDK_INT>=26?new Notification.Builder(this,CHANNEL):new Notification.Builder(this);
         b.setSmallIcon(R.mipmap.ic_launcher).setContentTitle("Solarbank Live läuft").setContentText(text).setContentIntent(openPending).setOngoing(true).setOnlyAlertOnce(true).addAction(android.R.drawable.ic_media_pause,"Beenden",stopPending);
