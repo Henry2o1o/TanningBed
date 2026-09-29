@@ -71,6 +71,7 @@ public class MainActivity extends Activity {
     private LinearLayout devicesArea;
     private TextView peakValue,peakCaption;
     private TextView pvStat,batteryStat,homeStat,gridStat,batteryDetailSoc,batteryCapacityUnderSoc,batteryChargePower,batteryDischargePower,batterySocLabel;
+    private final TextView[] pvInputPower=new TextView[4],pvInputCurrent=new TextView[4];
     private EditText myStromIpField;
     private TextView myStromPower,myStromStatus;
     private LinearLayout myStromRow;
@@ -144,6 +145,8 @@ public class MainActivity extends Activity {
         flowMap=new EnergyFlowView(this);LinearLayout.LayoutParams fmp=params(-1,310);fmp.topMargin=dp(7);flowCard.addView(flowMap,fmp);
 
         TextView statsTitle=text("AKTUELLE ENERGIEFLÜSSE",11,MUTED,true);LinearLayout.LayoutParams stp=params(-1,-2);stp.topMargin=dp(12);stp.bottomMargin=dp(7);page.addView(statsTitle,stp);LinearLayout statsRow=new LinearLayout(this);statsRow.setOrientation(LinearLayout.HORIZONTAL);page.addView(statsRow,params(-1,-2));pvStat=smallStat(statsRow,"☀ Solar","— W",YELLOW,true);batteryStat=smallStat(statsRow,"▣ Akku","— W",GREEN,false);homeStat=smallStat(statsRow,"⌂ Haus","— W",BLUE,false);gridStat=smallStat(statsRow,"⚡ Netz","— W",Color.rgb(170,99,255),false);
+
+        addPvInputsCard(page);
 
         LinearLayout myStromCard=card(page,12);myStromCard.setPadding(dp(13),dp(12),dp(13),dp(12));LinearLayout myStromHeader=new LinearLayout(this);myStromHeader.setGravity(Gravity.CENTER_VERTICAL);myStromCard.addView(myStromHeader,params(-1,30));myStromHeader.addView(text("☀  WEITERE PV · MYSTROM",12,INK,true),new LinearLayout.LayoutParams(0,-2,1));myStromEdit=new Button(this);myStromEdit.setText("IP ändern");myStromEdit.setAllCaps(false);myStromEdit.setTextSize(10);myStromEdit.setMinHeight(0);myStromEdit.setPadding(dp(6),0,dp(6),0);myStromEdit.setTextColor(BLUE);myStromEdit.setBackgroundColor(Color.TRANSPARENT);myStromHeader.addView(myStromEdit,params(-2,30));myStromPower=text("— W",20,YELLOW,true);myStromHeader.addView(myStromPower);TextView myStromHint=text("Lokale Messung der Growatt-Einspeisung im WLAN",11,MUTED,false);LinearLayout.LayoutParams mhp=params(-1,-2);mhp.topMargin=dp(3);myStromCard.addView(myStromHint,mhp);myStromRow=new LinearLayout(this);myStromRow.setGravity(Gravity.CENTER_VERTICAL);LinearLayout.LayoutParams msrp=params(-1,48);msrp.topMargin=dp(6);myStromCard.addView(myStromRow,msrp);myStromIpField=new EditText(this);myStromIpField.setSingleLine(true);myStromIpField.setHint("Steckdosen-IP, z. B. 192.168.1.50");myStromIpField.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);String savedMyStromIp=getSharedPreferences("cloud_session",MODE_PRIVATE).getString("mystrom_ip","");myStromIpField.setText(savedMyStromIp);myStromIpField.setPadding(dp(10),0,dp(8),0);myStromIpField.setBackground(round(darkTheme?Color.rgb(23,42,59):Color.rgb(245,248,251),10));myStromRow.addView(myStromIpField,new LinearLayout.LayoutParams(0,-1,1));Button myStromSave=new Button(this);myStromSave.setText("Verbinden");myStromSave.setAllCaps(false);myStromSave.setTextColor(Color.WHITE);myStromSave.setBackgroundTintList(android.content.res.ColorStateList.valueOf(GREEN));LinearLayout.LayoutParams msp=params(104,-1);msp.leftMargin=dp(7);myStromRow.addView(myStromSave,msp);myStromStatus=text(savedMyStromIp.isEmpty()?"IP eingeben, um die Steckdose lokal auszulesen":"Verbinde lokal mit "+savedMyStromIp+" …",10,MUTED,false);LinearLayout.LayoutParams mssp=params(-1,-2);mssp.topMargin=dp(4);myStromCard.addView(myStromStatus,mssp);myStromRow.setVisibility(savedMyStromIp.isEmpty()?View.VISIBLE:View.GONE);myStromEdit.setVisibility(savedMyStromIp.isEmpty()?View.GONE:View.VISIBLE);myStromEdit.setOnClickListener(v->{myStromIpField.setText(getSharedPreferences("cloud_session",MODE_PRIVATE).getString("mystrom_ip",""));myStromRow.setVisibility(View.VISIBLE);myStromEdit.setVisibility(View.GONE);});myStromSave.setOnClickListener(v->saveMyStromAddress());addMyStromChart(page);addBluettiCard(page);
 
@@ -242,6 +245,7 @@ public class MainActivity extends Activity {
         JSONObject bank=data.optJSONObject("solarbank_info");if(bank==null)bank=new JSONObject();
         JSONObject first=bank.optJSONArray("solarbank_list")!=null?bank.optJSONArray("solarbank_list").optJSONObject(0):null;if(first==null)first=new JSONObject();
         chartDeviceSn=firstNonEmpty(first.optString("device_sn",""),first.optString("sn",""));
+        updatePvInputValues(data);
         String totalSocRaw=bank.optString("total_battery_power","");double soc=parseNumber(totalSocRaw,Double.NaN);if(Double.isFinite(soc)){String siteType=siteTypes.getOrDefault(siteId,"").toLowerCase(Locale.ROOT);if(!siteType.contains("pps")&&soc>=0&&soc<=1.0)soc*=100;}else{soc=parseNumber(first.optString("battery_soc",""),Double.NaN);if(soc>0&&soc<1.0)soc*=100;}
         // Do not clamp malformed payloads to 0/100: that made the battery ring jump.
         int percent=Double.isFinite(soc)&&soc>=0&&soc<=100?(int)Math.round(soc):-1;double capacityWh=systemBatteryCapacityWh(bank);
@@ -397,6 +401,33 @@ public class MainActivity extends Activity {
 
     private void clearMetrics(){if(flowMap!=null)flowMap.setReadings("— W","— W","— W","— W","— W",-1);if(pvStat!=null)pvStat.setText("— W");if(batteryStat!=null)batteryStat.setText("— W");if(homeStat!=null)homeStat.setText("— W");if(gridStat!=null)gridStat.setText("— W");updated.setText("Keine Messwerte von Anker erhalten");}
 
+    private void addPvInputsCard(LinearLayout parent){
+        LinearLayout panel=card(parent,12);panel.setPadding(dp(13),dp(12),dp(13),dp(13));
+        TextView title=text("☀  PV-EINGÄNGE · LIVE",13,YELLOW,true);panel.addView(title,params(-1,25));
+        for(int rowIndex=0;rowIndex<2;rowIndex++){
+            LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);LinearLayout.LayoutParams rowLp=params(-1,62);rowLp.topMargin=dp(rowIndex==0?6:7);panel.addView(row,rowLp);
+            for(int col=0;col<2;col++){int channel=rowIndex*2+col;addPvInputTile(row,channel);}
+        }
+    }
+    private void addPvInputTile(LinearLayout row,int channel){
+        LinearLayout tile=new LinearLayout(this);tile.setOrientation(LinearLayout.VERTICAL);tile.setGravity(Gravity.CENTER_VERTICAL);tile.setPadding(dp(10),dp(6),dp(9),dp(6));tile.setBackground(glassShape(15,YELLOW));if(darkTheme&&Build.VERSION.SDK_INT>=28){tile.setElevation(dp(4));tile.setOutlineAmbientShadowColor(Color.argb(65,255,211,66));tile.setOutlineSpotShadowColor(Color.argb(80,255,211,66));}
+        LinearLayout.LayoutParams tileLp=new LinearLayout.LayoutParams(0,-1,1);if(channel%2==1)tileLp.leftMargin=dp(7);row.addView(tile,tileLp);
+        TextView name=text("PV "+(channel+1),11,YELLOW,true);tile.addView(name,params(-1,-2));
+        LinearLayout metrics=new LinearLayout(this);metrics.setGravity(Gravity.CENTER_VERTICAL);LinearLayout.LayoutParams metricsLp=params(-1,-2);metricsLp.topMargin=dp(3);tile.addView(metrics,metricsLp);
+        LinearLayout powerCol=new LinearLayout(this);powerCol.setOrientation(LinearLayout.VERTICAL);metrics.addView(powerCol,new LinearLayout.LayoutParams(0,-2,1));powerCol.addView(text("LEISTUNG",8,MUTED,true));pvInputPower[channel]=text("— W",14,INK,true);powerCol.addView(pvInputPower[channel]);
+        LinearLayout currentCol=new LinearLayout(this);currentCol.setOrientation(LinearLayout.VERTICAL);currentCol.setGravity(Gravity.RIGHT);metrics.addView(currentCol,new LinearLayout.LayoutParams(0,-2,1));currentCol.addView(text("STROM",8,MUTED,true));pvInputCurrent[channel]=text("— A",13,GREEN,true);currentCol.addView(pvInputCurrent[channel]);
+    }
+    private void updatePvInputValues(JSONObject scene){
+        JSONObject live=new JSONObject();if(!chartDeviceSn.isEmpty())try{live=new JSONObject(getSharedPreferences("cloud_session",MODE_PRIVATE).getString("mqtt_device_"+chartDeviceSn,"{}"));}catch(Exception ignored){}
+        for(int channel=1;channel<=4;channel++){
+            String suffix=String.valueOf(channel);double watts=findNumeric(scene,"solar_power_"+suffix,"pv_"+suffix+"_power","pv"+suffix+"_power","pv_power_"+suffix,"photovoltaic_power_"+suffix,"pv_input_power_"+suffix);double amps=findNumeric(scene,"solar_current_"+suffix,"pv_"+suffix+"_current","pv"+suffix+"_current","pv_current_"+suffix,"photovoltaic_current_"+suffix,"pv_input_current_"+suffix);
+            double liveWatts=findNumeric(live,"pv_"+suffix+"_power","pv"+suffix+"_power");if(Double.isFinite(liveWatts)&&liveWatts>=0&&liveWatts<=5000)watts=liveWatts;
+            double liveAmps=findNumeric(live,"pv_"+suffix+"_current","pv"+suffix+"_current");if(Double.isFinite(liveAmps)&&liveAmps>=0&&liveAmps<=50)amps=liveAmps;
+            if(pvInputPower[channel-1]!=null)pvInputPower[channel-1].setText(Double.isFinite(watts)&&watts>=0&&watts<=5000?String.format(Locale.GERMANY,"%.0f W",watts):"— W");
+            if(pvInputCurrent[channel-1]!=null)pvInputCurrent[channel-1].setText(Double.isFinite(amps)&&amps>=0&&amps<=50?String.format(Locale.GERMANY,"%.2f A",amps):"— A");
+        }
+    }
+    private double findNumeric(JSONObject object,String... names){if(object==null)return Double.NaN;for(String name:names){String wanted=name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");java.util.Iterator<String> keys=object.keys();while(keys.hasNext()){String key=keys.next();Object value=object.opt(key);if(key.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","").equals(wanted)&&value!=null&&!JSONObject.NULL.equals(value)){double n=parseNumber(String.valueOf(value),Double.NaN);if(Double.isFinite(n))return n;}}}java.util.Iterator<String> keys=object.keys();while(keys.hasNext()){Object value=object.opt(keys.next());if(value instanceof JSONObject){double n=findNumeric((JSONObject)value,names);if(Double.isFinite(n))return n;}else if(value instanceof JSONArray){JSONArray array=(JSONArray)value;for(int i=0;i<array.length();i++){JSONObject child=array.optJSONObject(i);if(child!=null){double n=findNumeric(child,names);if(Double.isFinite(n))return n;}}}}return Double.NaN;}
     private LinearLayout card(LinearLayout parent,int topMargin){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(17),dp(16),dp(17),dp(16));c.setBackground(glassShape(22,BLUE));if(Build.VERSION.SDK_INT>=21)c.setElevation(dp(darkTheme?7:2));if(darkTheme&&Build.VERSION.SDK_INT>=28){c.setOutlineAmbientShadowColor(Color.argb(80,42,190,255));c.setOutlineSpotShadowColor(Color.argb(105,42,190,255));}LinearLayout.LayoutParams p=params(-1,-2);p.topMargin=dp(topMargin);parent.addView(c,p);return c;}
     private TextView text(String value,int size,int color,boolean bold){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);if(bold)t.setTypeface(null,Typeface.BOLD);if(darkTheme&&(color==GREEN||color==YELLOW||color==BLUE||color==ORANGE))t.setShadowLayer(dp(5),0,0,Color.argb(125,Color.red(color),Color.green(color),Color.blue(color)));return t;}
     private GradientDrawable round(int color,int radius){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
@@ -468,10 +499,10 @@ public class MainActivity extends Activity {
             p.setStyle(Paint.Style.FILL);p.setShader(new RadialGradient(x,y,r,new int[]{Color.argb(62,42,190,255),Color.argb(30,31,103,127),Color.argb(8,7,19,34)},null,Shader.TileMode.CLAMP));c.drawCircle(x,y,r+2,p);p.setShader(null);
             p.setShader(new LinearGradient(x-r,y-r,x+r,y+r,Color.argb(145,42,91,116),Color.argb(100,8,22,39),Shader.TileMode.CLAMP));c.drawCircle(x,y,r-4,p);p.setShader(null);
             p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeWidth(1.1f);p.setColor(Color.argb(140,130,226,244));c.drawCircle(x,y,r-1,p);
-            p.setStrokeWidth(5.5f);p.setColor(Color.argb(135,114,166,184));c.drawArc(box,-220,260,false,p);
-            p.setStrokeWidth(9.5f);p.setColor(Color.argb(66,Color.red(levelColor),Color.green(levelColor),Color.blue(levelColor)));p.setShadowLayer(10,0,0,levelColor);c.drawArc(box,-220,progress,false,p);p.clearShadowLayer();
-            p.setStrokeWidth(5.5f);p.setShader(new android.graphics.SweepGradient(x,y,new int[]{GREEN,BLUE,GREEN},null));p.setShadowLayer(8,0,0,levelColor);c.drawArc(box,-220,progress,false,p);p.clearShadowLayer();p.setShader(null);
-            p.setStrokeWidth(1.2f);p.setColor(Color.argb(185,180,246,255));c.drawArc(new RectF(x-r+4,y-r+4,x+r-4,y+r-4),-220,260,false,p);
+            p.setStrokeWidth(4.2f);p.setColor(Color.argb(135,114,166,184));c.drawArc(box,-220,260,false,p);
+            p.setStrokeWidth(7.2f);p.setColor(Color.argb(54,Color.red(levelColor),Color.green(levelColor),Color.blue(levelColor)));p.setShadowLayer(8,0,0,levelColor);c.drawArc(box,-220,progress,false,p);p.clearShadowLayer();
+            p.setStrokeWidth(4.2f);p.setShader(new android.graphics.SweepGradient(x,y,new int[]{GREEN,BLUE,GREEN},null));p.setShadowLayer(6,0,0,levelColor);c.drawArc(box,-220,progress,false,p);p.clearShadowLayer();p.setShader(null);
+            p.setStrokeWidth(.9f);p.setColor(Color.argb(185,180,246,255));c.drawArc(new RectF(x-r+4,y-r+4,x+r-4,y+r-4),-220,260,false,p);
             p.setStyle(Paint.Style.FILL);p.setShader(new RadialGradient(x-r*.34f,y-r*.43f,r*.9f,new int[]{Color.argb(70,176,248,255),Color.argb(22,54,174,193),Color.argb(4,11,29,47)},null,Shader.TileMode.CLAMP));c.drawCircle(x,y,33,p);p.setShader(null);
             p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(.9f);p.setColor(Color.argb(115,157,240,249));c.drawCircle(x,y,33,p);p.setStyle(Paint.Style.FILL);
             p.setTextAlign(Paint.Align.CENTER);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.BOLD));p.setTextSize(10);p.setColor(levelColor);p.setShadowLayer(6,0,0,levelColor);c.drawText("▣  AKKU",x,y-18,p);p.clearShadowLayer();p.setTextSize(34);p.setColor(INK);p.setShadowLayer(8,0,0,Color.argb(150,42,255,177));c.drawText(soc<0?"—%":soc+"%",x,y+10,p);p.clearShadowLayer();p.setTypeface(Typeface.create("sans-serif",Typeface.NORMAL));p.setTextSize(10);p.setColor(Color.rgb(189,218,231));c.drawText("Ladezustand",x,y+29,p);p.setTextAlign(Paint.Align.LEFT);p.setStyle(Paint.Style.FILL);
