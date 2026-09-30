@@ -3,9 +3,9 @@
 ## Starten
 
 1. Das ZIP vollständig entpacken.
-2. Im entpackten Ordner `Sonnenbank Web Linux.desktop` doppelklicken und **Starten** wählen. Alternativ im Terminal `./Start_Sonnenbank.sh` starten.
+2. Im entpackten Ordner `Sonnenbank Web Linux.desktop` doppelklicken. Das Steuerfenster bietet **Server starten**, **Server stoppen** und **Dashboard öffnen**. Alternativ im Terminal `./Start_Sonnenbank.sh` starten.
 3. Falls Java fehlt, Java 17 oder neuer installieren. Auf Ubuntu/Debian: `sudo apt install openjdk-17-jre`.
-4. Der Starter öffnet `http://127.0.0.1:8765` automatisch. Falls nicht, diese Adresse im Browser öffnen.
+4. **Server starten** öffnet `http://127.0.0.1:8765` automatisch. Das Steuerfenster bleibt verfügbar, wenn der Webserver gestoppt ist. Beim Schließen des Steuerfensters läuft der Server weiter, bis **Server stoppen** gedrückt wird.
 5. **Mit Anker verbinden** auswählen und mit dem Anker-SOLIX-Konto anmelden.
 
 Der lokale Begleitdienst zeigt Systeme und Geräte an, fragt Cloudwerte ab und startet den MQTT-Echtzeitkanal. Er speichert das Passwort nicht; die Sitzungstokens liegen in den lokalen Java-Benutzereinstellungen. Messwerthistorie wird in `~/.sonnenbank/web-history.jsonl` gespeichert.

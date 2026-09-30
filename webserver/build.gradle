@@ -6,7 +6,7 @@ sourceSets {
     main {
         java {
             srcDirs = ['../desktop/src/main/java']
-            include 'AnkerCloudClient.java', 'AnkerMqttLiveClient.java', 'DesktopPreferences.java', 'SonnenbankWebServer.java'
+            include 'AnkerCloudClient.java', 'AnkerMqttLiveClient.java', 'DesktopPreferences.java', 'SonnenbankWebServer.java', 'SonnenbankServerControl.java'
         }
         resources {
             srcDirs = ['../web']
