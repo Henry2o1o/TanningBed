@@ -1,5 +1,5 @@
-# Sonnenbank HTML-Vorschau
+# Sonnenbank HTML-Oberfläche
 
-Öffne `index.html` in einem aktuellen Browser. Die Seite passt sich großen Bildschirmen und Mobilgeräten an und enthält animierte Energiepfade sowie Tag-, Monats- und Jahresdiagramme.
+`index.html` ist die Oberfläche der PC-Web-App. Für echte Gerätewerte muss sie über den lokalen Java-Begleitdienst geöffnet werden. Direkt im Browser geöffnet, läuft die Seite nur als Designvorschau mit simulierten Diagrammkurven.
 
-Die Messwerte sind Demonstrationswerte. Die HTML-Vorschau ist noch nicht mit dem Anker-SOLIX-Konto oder den Geräten verbunden. Eine echte Cloud-Anbindung benötigt einen lokalen Begleitdienst, weil Anmeldeinformationen und das inoffizielle Anker-Protokoll nicht sicher direkt in einer statischen Browserdatei untergebracht werden sollten.
+Der Begleitdienst bindet nur an `127.0.0.1`, übernimmt die Anker-SOLIX-Anmeldung, Cloud-Abfragen und den MQTT-Echtzeitkanal. Er speichert das Passwort nicht. Messwerte werden lokal unter `~/.sonnenbank/web-history.jsonl` aufgezeichnet. myStrom wird über seine IP-Adresse im Heimnetz abgefragt.

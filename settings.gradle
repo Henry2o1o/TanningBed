@@ -8,3 +8,4 @@ dependencyResolutionManagement {
 rootProject.name = "SolarbankLive"
 include(":app")
 include(":desktop")
+include(":webserver")

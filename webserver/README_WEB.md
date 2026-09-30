@@ -1,0 +1,17 @@
+# Sonnenbank Web für Linux
+
+## Starten
+
+1. Java 17 oder neuer installieren.
+2. Das Archiv `Sonnenbank_Web_Linux` entpacken.
+3. Im entpackten Ordner `SonnenbankWeb/bin/SonnenbankWeb` starten.
+4. Im Browser `http://127.0.0.1:8765` öffnen, falls er sich nicht automatisch öffnet.
+5. **Mit Anker verbinden** auswählen und mit dem Anker-SOLIX-Konto anmelden.
+
+Der lokale Begleitdienst zeigt Systeme und Geräte an, fragt Cloudwerte ab und startet den MQTT-Echtzeitkanal. Er speichert das Passwort nicht; die Sitzungstokens liegen in den lokalen Java-Benutzereinstellungen. Messwerthistorie wird in `~/.sonnenbank/web-history.jsonl` gespeichert.
+
+myStrom: In der Karte **Weitere PV · myStrom** die lokale IPv4-Adresse eingeben. Die App liest `http://<IP>/report` nur im Heimnetz.
+
+Bluetti AC200 Max: **Bluetooth verbinden** auswählen und das Gerät im Browserdialog anklicken. Dafür muss der PC Bluetooth unterstützen und das Bluetti-Gerät eingeschaltet sowie in Reichweite sein. Chrome oder Edge wird benötigt; der Browser erteilt die Bluetooth-Verbindung direkt.
+
+Smart Meter L1–L3, Phasenleistung und Spannung sowie bis zu zwei Smart-Plug-Gen2-Verläufe erscheinen, sofern Anker diese Geräte und MQTT-Werte für das Konto liefert. Das Anker-Protokoll ist inoffiziell und kann sich ändern. Die Anwendung ist nur am lokalen PC erreichbar.

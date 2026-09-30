@@ -1,0 +1,29 @@
+plugins {
+    id 'application'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['../desktop/src/main/java']
+            include 'AnkerCloudClient.java', 'AnkerMqttLiveClient.java', 'DesktopPreferences.java', 'SonnenbankWebServer.java'
+        }
+        resources {
+            srcDirs = ['../web']
+        }
+    }
+}
+
+dependencies {
+    implementation 'org.json:json:20250517'
+}
+
+application {
+    mainClass = 'SonnenbankWebServer'
+    applicationName = 'SonnenbankWeb'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
