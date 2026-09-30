@@ -17,7 +17,7 @@ import java.util.Locale;
 /** Local, timestamped energy-flow history retained across app and process restarts. */
 final class EnergyHistoryStore extends SQLiteOpenHelper {
     private static final String DB_NAME="solarbank_energy_history.db";
-    private static final int DB_VERSION=1;
+    private static final int DB_VERSION=2;
     private static final long RETENTION_DAYS=30;
     private static volatile EnergyHistoryStore instance;
 
@@ -38,9 +38,11 @@ final class EnergyHistoryStore extends SQLiteOpenHelper {
     @Override public void onCreate(SQLiteDatabase db){
         db.execSQL("CREATE TABLE energy_samples (site_id TEXT NOT NULL, timestamp_ms INTEGER NOT NULL, pv_w REAL, home_w REAL, battery_w REAL, grid_w REAL, PRIMARY KEY(site_id,timestamp_ms))");
         db.execSQL("CREATE INDEX energy_samples_time ON energy_samples(timestamp_ms)");
+        createScalarTable(db);
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){}
+    @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){if(oldVersion<2)createScalarTable(db);}
+    private void createScalarTable(SQLiteDatabase db){db.execSQL("CREATE TABLE IF NOT EXISTS scalar_samples (series_key TEXT NOT NULL, minute_ms INTEGER NOT NULL, value REAL NOT NULL, PRIMARY KEY(series_key,minute_ms))");db.execSQL("CREATE INDEX IF NOT EXISTS scalar_samples_time ON scalar_samples(minute_ms)");}
 
     synchronized void insert(String siteId,long timestamp,double pv,double home,double battery,double grid){
         if(siteId==null||siteId.isEmpty()||timestamp<=0||(!Double.isFinite(pv)&&!Double.isFinite(home)&&!Double.isFinite(battery)&&!Double.isFinite(grid)))return;
@@ -59,6 +61,16 @@ final class EnergyHistoryStore extends SQLiteOpenHelper {
         return new TodayData(points,count,latestMinute);
     }
 
+    synchronized void insertScalar(String seriesKey,long timestamp,double value){
+        if(seriesKey==null||seriesKey.isEmpty()||timestamp<=0||!Double.isFinite(value))return;long minuteMs=(timestamp/60000L)*60000L;SQLiteDatabase db=getWritableDatabase();ContentValues row=new ContentValues();row.put("series_key",seriesKey);row.put("minute_ms",minuteMs);row.put("value",value);db.insertWithOnConflict("scalar_samples",null,row,SQLiteDatabase.CONFLICT_REPLACE);long cutoff=System.currentTimeMillis()-RETENTION_DAYS*24L*60L*60L*1000L;db.delete("scalar_samples","minute_ms<?",new String[]{Long.toString(cutoff)});
+    }
+
+    synchronized TodayData readTodayScalar(String seriesKey){
+        ArrayList<float[]> points=new ArrayList<>(1440);for(int i=0;i<1440;i++)points.add(new float[]{Float.NaN,Float.NaN,Float.NaN,Float.NaN});Calendar start=Calendar.getInstance();start.set(Calendar.HOUR_OF_DAY,0);start.set(Calendar.MINUTE,0);start.set(Calendar.SECOND,0);start.set(Calendar.MILLISECOND,0);long startMs=start.getTimeInMillis();Calendar nextDay=(Calendar)start.clone();nextDay.add(Calendar.DAY_OF_MONTH,1);int count=0,latestMinute=-1;SQLiteDatabase db=getReadableDatabase();
+        try(Cursor c=db.query("scalar_samples",new String[]{"minute_ms","value"},"series_key=? AND minute_ms>=? AND minute_ms<?",new String[]{seriesKey,Long.toString(startMs),Long.toString(nextDay.getTimeInMillis())},null,null,"minute_ms ASC")){while(c.moveToNext()){Calendar at=Calendar.getInstance();at.setTimeInMillis(c.getLong(0));int minute=at.get(Calendar.HOUR_OF_DAY)*60+at.get(Calendar.MINUTE);if(minute<0||minute>=1440)continue;points.set(minute,new float[]{(float)c.getDouble(1),Float.NaN,Float.NaN,Float.NaN});count++;latestMinute=Math.max(latestMinute,minute);}}
+        return new TodayData(points,count,latestMinute);
+    }
+
     /** Store a scene from the foreground service so chart samples accrue while the UI is away. */
     static void recordScene(Context context,String siteId,JSONObject scene){
         if(scene==null)return;JSONObject bank=scene.optJSONObject("solarbank_info");if(bank==null)bank=new JSONObject();JSONObject gridInfo=scene.optJSONObject("grid_info");if(gridInfo==null)gridInfo=new JSONObject();SharedPreferences prefs=context.getSharedPreferences("cloud_session",Context.MODE_PRIVATE);
@@ -67,8 +79,10 @@ final class EnergyHistoryStore extends SQLiteOpenHelper {
         long mqttAt=0;try{JSONArray devices=new JSONArray(prefs.getString("mqtt_devices","[]"));for(int i=0;i<devices.length();i++){JSONObject device=devices.optJSONObject(i);if(device==null)continue;String pn=first(device,"device_pn","product_code","device_model");if(!"AE103".equalsIgnoreCase(pn))continue;String sn=first(device,"device_sn","sn");if(sn.isEmpty())continue;JSONObject live=new JSONObject(prefs.getString("mqtt_device_"+sn,"{}"));if(live.length()==0)continue;mqttAt=Math.max(mqttAt,live.optLong("received_at",0));double v=number(live,"photovoltaic_power");if(Double.isFinite(v))pv=v;v=number(live,"battery_power_signed");if(Double.isFinite(v))battery=v;v=number(live,"home_demand");if(Double.isFinite(v))home=v;v=number(live,"grid_power_signed");if(Double.isFinite(v))grid=v;break;}}catch(Exception ignored){}
         // Timestamp the actual background poll so it creates a durable sample even when
         // the cloud payload repeats an older device-side updated_time value.
-        long timestamp=System.currentTimeMillis();if(mqttAt>timestamp)timestamp=mqttAt;get(context).insert(siteId,timestamp,pv,home,battery,grid);
+        long timestamp=System.currentTimeMillis();if(mqttAt>timestamp)timestamp=mqttAt;EnergyHistoryStore store=get(context);store.insert(siteId,timestamp,pv,home,battery,grid);double soc=number(bank,"total_battery_power");boolean totalSoc=Double.isFinite(soc);if(!totalSoc){JSONArray batteries=bank.optJSONArray("solarbank_list");if(batteries!=null&&batteries.length()>0){JSONObject first=batteries.optJSONObject(0);if(first!=null)soc=number(first,"battery_soc");}}if(Double.isFinite(soc)){String siteType=context.getSharedPreferences("cloud_session",Context.MODE_PRIVATE).getString("site_type_"+siteId,"").toLowerCase(Locale.ROOT);if(totalSoc&&!siteType.contains("pps")&&soc>=0&&soc<=1)soc*=100;else if(!totalSoc&&soc>0&&soc<1)soc*=100;if(soc>=0&&soc<=100)store.insertScalar("battery:"+siteId,timestamp,soc);}
     }
+
+    static void recordMyStrom(Context context,String ip,double watts){if(ip==null||ip.trim().isEmpty()||!Double.isFinite(watts))return;get(context).insertScalar("mystrom:"+ip.trim(),System.currentTimeMillis(),watts);}
 
     private static void putFinite(ContentValues row,String key,double value){if(Double.isFinite(value))row.put(key,value);else row.putNull(key);}
     private static double number(JSONObject object,String...keys){for(String key:keys){Object raw=object.opt(key);if(raw instanceof Number)return ((Number)raw).doubleValue();if(raw!=null&&raw!=JSONObject.NULL)try{double value=Double.parseDouble(String.valueOf(raw));if(Double.isFinite(value))return value;}catch(Exception ignored){}}return Double.NaN;}

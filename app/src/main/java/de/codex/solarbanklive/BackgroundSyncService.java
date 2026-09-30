@@ -11,6 +11,10 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import org.json.JSONObject;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,6 +73,7 @@ public final class BackgroundSyncService extends Service {
         io.execute(()->{
             JSONObject scene=null;String error=null;
             try{scene=client.getSceneInfo(siteId);try{EnergyHistoryStore.recordScene(this,siteId,scene);}catch(Exception ignored){}}catch(Exception e){error=e.getMessage();}
+            String myStromIp=getSharedPreferences("cloud_session",MODE_PRIVATE).getString("mystrom_ip","").trim();if(!myStromIp.isEmpty())try{double watts=readMyStromPower(myStromIp);EnergyHistoryStore.recordMyStrom(this,myStromIp,watts);}catch(Exception ignored){}
             final JSONObject result=scene;final String failure=error;
             handler.post(()->{
                 requestRunning=false;if(stopped)return;
@@ -84,6 +89,7 @@ public final class BackgroundSyncService extends Service {
     }
 
     private static String value(JSONObject obj,String... keys){for(String key:keys){String v=obj.optString(key,"");if(!v.isEmpty()&&!v.equals("null"))return v;}return "";}
+    private double readMyStromPower(String ip)throws Exception{HttpURLConnection c=(HttpURLConnection)new URL("http://"+ip+"/report").openConnection();c.setRequestMethod("GET");c.setConnectTimeout(2500);c.setReadTimeout(2500);c.setUseCaches(false);try{if(c.getResponseCode()!=200)throw new java.io.IOException("myStrom HTTP "+c.getResponseCode());try(InputStream in=c.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] buf=new byte[512];int n;while((n=in.read(buf))!=-1){out.write(buf,0,n);if(out.size()>8192)throw new java.io.IOException("myStrom-Antwort zu groß");}double power=new JSONObject(out.toString("UTF-8")).optDouble("power",Double.NaN);if(!Double.isFinite(power))throw new java.io.IOException("myStrom-Leistung fehlt");return power;}}finally{c.disconnect();}}
     private String intervalLabel(){if(refreshInterval<=30_000)return "Live (30 s)";if(refreshInterval<=60_000)return "jede Minute";return "alle "+(refreshInterval/60_000)+" Minuten";}
     private static String formatPower(String raw){try{return String.format(Locale.GERMANY,"%.0f W",Double.parseDouble(raw));}catch(Exception e){return raw+" W";}}
     private void stopMonitoring(){stopped=true;handler.removeCallbacks(poll);if(mqttClient!=null)mqttClient.stop();stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();}
