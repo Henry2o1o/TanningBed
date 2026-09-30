@@ -1,0 +1,17 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    implementation 'org.json:json:20250517'
+}
+
+application {
+    mainClass = 'SolarbankDesktop'
+    applicationName = 'Sonnenbank'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}

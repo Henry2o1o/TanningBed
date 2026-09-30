@@ -6,6 +6,7 @@ app/build/
 work/
 outputs/*.apk
 outputs/*.zip
+outputs/*.tar.gz
 local.properties
 .android-user/
 *.iml
