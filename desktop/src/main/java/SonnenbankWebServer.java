@@ -3,12 +3,10 @@ import com.sun.net.httpserver.HttpServer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.awt.Desktop;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +57,7 @@ public final class SonnenbankWebServer {
         server.createContext("/api/",this::api);server.createContext("/",this::staticFile);httpExecutor=Executors.newFixedThreadPool(6);server.setExecutor(httpExecutor);server.start();
         restoreSession();scheduler.scheduleWithFixedDelay(this::pollCloud,1,30,TimeUnit.SECONDS);scheduler.scheduleAtFixedRate(this::pollMyStrom,0,1,TimeUnit.SECONDS);
         String address="http://127.0.0.1:"+PORT+"/";System.out.println("Sonnenbank Web läuft lokal: "+address);
-        try{if(Desktop.isDesktopSupported())Desktop.getDesktop().browse(URI.create(address));}catch(Exception ignored){}
+        try{new ProcessBuilder("xdg-open",address).start();}catch(Exception ignored){}
         Runtime.getRuntime().addShutdownHook(new Thread(()->{if(mqtt!=null)mqtt.stop();scheduler.shutdownNow();server.stop(0);httpExecutor.shutdownNow();}));
     }
 
