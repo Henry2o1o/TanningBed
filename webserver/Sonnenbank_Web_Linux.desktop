@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Sonnenbank Web
+Comment=Lokales Solar-Dashboard starten
+Terminal=true
+Exec=sh -c 'cd -- "$(dirname -- "$1")" && exec ./Start_Sonnenbank.sh' sh %k
+Icon=utilities-system-monitor
+Categories=Utility;
