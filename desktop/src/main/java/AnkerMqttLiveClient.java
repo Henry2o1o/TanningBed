@@ -110,8 +110,8 @@ final class AnkerMqttLiveClient {
         String pn="",sn="";String[] parts=topic.split("/");if(parts.length>=4){pn=parts[2];sn=parts[3];}
         JSONObject outer=new JSONObject(new String(raw,StandardCharsets.UTF_8));String encoded=findData(outer,0);if(encoded.isEmpty())return;
         byte[] bytes=java.util.Base64.getMimeDecoder().decode(encoded);Map<String,Double> vals=decode(bytes,pn);if(vals.isEmpty())return;
-        JSONObject record=new JSONObject();for(Map.Entry<String,Double> e:vals.entrySet())record.put(e.getKey(),e.getValue());record.put("device_pn",pn);record.put("device_sn",sn);record.put("received_at",System.currentTimeMillis());
-        DesktopPreferences p=prefs;String key="mqtt_device_"+sn;JSONObject merged=new JSONObject();try{merged=new JSONObject(p.getString(key,"{}"));}catch(Exception ignored){}java.util.Iterator<String> keys=record.keys();while(keys.hasNext()){String k=keys.next();merged.put(k,record.get(k));}
+        JSONObject record=new JSONObject();for(Map.Entry<String,Double> e:vals.entrySet())record.put(e.getKey(),e.getValue());record.put("device_pn",pn);record.put("device_sn",sn);record.put("received_at",System.currentTimeMillis());if(pn.equals("AE103"))record.put("mqtt_schema_version",2);
+        DesktopPreferences p=prefs;String key="mqtt_device_"+sn;JSONObject merged=new JSONObject();try{merged=new JSONObject(p.getString(key,"{}"));}catch(Exception ignored){}if(pn.equals("AE103")&&merged.optInt("mqtt_schema_version",0)<2&&merged.has("home_demand"))merged.put("home_demand",merged.optDouble("home_demand")*.001);java.util.Iterator<String> keys=record.keys();while(keys.hasNext()){String k=keys.next();merged.put(k,record.get(k));}
         p.putString(key,merged.toString());p.putString("mqtt_last_received",String.valueOf(System.currentTimeMillis()));status("Live-Messwerte empfangen");
     }
 
@@ -143,7 +143,7 @@ final class AnkerMqttLiveClient {
         if(pn.equals("AE103")){switch(key){case "ab":return "photovoltaic_power";case "ac":return "battery_power_signed";case "ad":return "output_power";case "ae":return "ac_output_power_signed";case "b0":return "pv_yield";case "b1":return "charged_energy";case "b2":return "discharged_energy";case "b4":return "grid_export_energy";case "c4":return "grid_power_signed";case "c5":return "home_demand";case "c6":return type==0x0405?"pv_1_power":null;case "c7":return type==0x0405?"pv_2_power":null;case "c8":return type==0x0405?"pv_3_power":null;case "c9":return type==0x0405?"pv_4_power":null;}}
         return null;
     }
-    private double fieldFactor(String pn,String key){if(pn.equals("A17X8")){if(key.equals("a8"))return .1;if(key.equals("a9"))return .01;if(key.equals("aa"))return .1;if(key.equals("ab"))return .001;}return 1;}
+    private double fieldFactor(String pn,String key){if(pn.equals("A17X8")){if(key.equals("a8"))return .1;if(key.equals("a9"))return .01;if(key.equals("aa"))return .1;if(key.equals("ab"))return .001;}if(pn.equals("AE103")&&key.equals("c5"))return .001;return 1;}
 
     private String findData(Object obj,int depth){if(depth>5)return "";if(obj instanceof JSONObject){JSONObject o=(JSONObject)obj;String direct=o.optString("data","");if(!direct.isEmpty()&&direct.matches("[A-Za-z0-9+/=]+"))return direct;for(String k:new String[]{"payload","message","body"}){Object v=o.opt(k);if(v instanceof String){try{String found=findData(new JSONObject((String)v),depth+1);if(!found.isEmpty())return found;}catch(Exception ignored){}}else{String found=findData(v,depth+1);if(!found.isEmpty())return found;}}}else if(obj instanceof JSONArray){JSONArray a=(JSONArray)obj;for(int i=0;i<a.length();i++){String s=findData(a.opt(i),depth+1);if(!s.isEmpty())return s;}}return "";}
 
