@@ -10,8 +10,8 @@ android {
         applicationId 'de.codex.solarbanklive'
         minSdk 26
         targetSdk 35
-        versionCode 83
-        versionName '1.82'
+        versionCode 84
+        versionName '1.83'
     }
 
     buildFeatures { buildConfig true }
