@@ -68,7 +68,7 @@ public final class BackgroundSyncService extends Service {
         requestRunning=true;
         io.execute(()->{
             JSONObject scene=null;String error=null;
-            try{scene=client.getSceneInfo(siteId);}catch(Exception e){error=e.getMessage();}
+            try{scene=client.getSceneInfo(siteId);try{EnergyHistoryStore.recordScene(this,siteId,scene);}catch(Exception ignored){}}catch(Exception e){error=e.getMessage();}
             final JSONObject result=scene;final String failure=error;
             handler.post(()->{
                 requestRunning=false;if(stopped)return;
