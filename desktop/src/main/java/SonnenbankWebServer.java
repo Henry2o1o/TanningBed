@@ -45,6 +45,7 @@ public final class SonnenbankWebServer {
     private JSONObject latestCloudValues=new JSONObject();
     private JSONObject bluettiReading=new JSONObject();
     private volatile double myStromPower=Double.NaN;
+    private long lastMyStromSampleAt=0;
     private long lastBluettiSampleAt=0;
     private String siteId="",nickname="";
     private volatile String status="Anker SOLIX noch nicht verbunden";
@@ -56,7 +57,7 @@ public final class SonnenbankWebServer {
     private void start()throws Exception{
         HttpServer server=HttpServer.create(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),PORT),32);
         server.createContext("/api/",this::api);server.createContext("/",this::staticFile);httpExecutor=Executors.newFixedThreadPool(6);server.setExecutor(httpExecutor);server.start();
-        restoreSession();scheduler.scheduleWithFixedDelay(this::pollCloud,1,30,TimeUnit.SECONDS);scheduler.scheduleWithFixedDelay(this::pollMyStrom,2,8,TimeUnit.SECONDS);
+        restoreSession();scheduler.scheduleWithFixedDelay(this::pollCloud,1,30,TimeUnit.SECONDS);scheduler.scheduleAtFixedRate(this::pollMyStrom,0,1,TimeUnit.SECONDS);
         String address="http://127.0.0.1:"+PORT+"/";System.out.println("Sonnenbank Web läuft lokal: "+address);
         try{if(Desktop.isDesktopSupported())Desktop.getDesktop().browse(URI.create(address));}catch(Exception ignored){}
         Runtime.getRuntime().addShutdownHook(new Thread(()->{if(mqtt!=null)mqtt.stop();scheduler.shutdownNow();server.stop(0);httpExecutor.shutdownNow();}));
@@ -105,7 +106,7 @@ public final class SonnenbankWebServer {
             sample.put("siteId",id);synchronized(this){scene=data;latestCloudValues=values;lastUpdate=now;status=mqtt==null?"Anker verbunden · Cloudwerte":"Verbunden · Cloud + MQTT";appendSample(sample);}
         }catch(Exception e){synchronized(this){status="Cloud-Abfrage fehlgeschlagen · "+safe(e);}}}
 
-    private void pollMyStrom(){String ip=local.get("mystrom_ip","");if(ip.isBlank())return;try{HttpURLConnection c=(HttpURLConnection)new URL("http://"+ip+"/report").openConnection();c.setConnectTimeout(1800);c.setReadTimeout(1800);try{if(c.getResponseCode()!=200)return;JSONObject report=new JSONObject(new String(c.getInputStream().readAllBytes(),StandardCharsets.UTF_8));double watts=num(report,"power");if(!Double.isFinite(watts))return;long now=System.currentTimeMillis();myStromPower=watts;synchronized(this){JSONObject values=new JSONObject().put("mystromW",watts);appendSample(new JSONObject().put("t",now).put("values",values));}}finally{c.disconnect();}}catch(Exception ignored){}}
+    private void pollMyStrom(){String ip=local.get("mystrom_ip","");if(ip.isBlank())return;try{HttpURLConnection c=(HttpURLConnection)new URL("http://"+ip+"/report").openConnection();c.setConnectTimeout(900);c.setReadTimeout(900);try{if(c.getResponseCode()!=200)return;JSONObject report=new JSONObject(new String(c.getInputStream().readAllBytes(),StandardCharsets.UTF_8));double watts=num(report,"power");if(!Double.isFinite(watts))return;long now=System.currentTimeMillis();myStromPower=watts;synchronized(this){if(now-lastMyStromSampleAt>=10000){JSONObject values=new JSONObject().put("mystromW",watts);appendSample(new JSONObject().put("t",now).put("values",values));lastMyStromSampleAt=now;}}}finally{c.disconnect();}}catch(Exception ignored){}}
 
     private synchronized JSONObject liveSnapshot(){
         JSONObject current=new JSONObject(latestCloudValues.toString());

@@ -11,6 +11,7 @@
 Der lokale Begleitdienst zeigt Systeme und Geräte an, fragt Cloudwerte ab und startet den MQTT-Echtzeitkanal. Er speichert das Passwort nicht; die Sitzungstokens liegen in den lokalen Java-Benutzereinstellungen. Messwerthistorie wird in `~/.sonnenbank/web-history.jsonl` gespeichert.
 
 myStrom: In der Karte **Weitere PV · myStrom** die lokale IPv4-Adresse eingeben. Die App liest `http://<IP>/report` nur im Heimnetz.
+myStrom wird ungefähr einmal pro Sekunde abgefragt. Seine aktuelle Leistung wird sofort in der Live-Anzeige verwendet; für die dauerhaft gespeicherte Historie wird aus Platzgründen nur alle 10 Sekunden ein Messpunkt abgelegt.
 
 Bluetti AC200 Max: **Bluetooth verbinden** auswählen und das Gerät im Browserdialog anklicken. Dafür muss der PC Bluetooth unterstützen und das Bluetti-Gerät eingeschaltet sowie in Reichweite sein. Chrome oder Edge wird benötigt; der Browser erteilt die Bluetooth-Verbindung direkt.
 
