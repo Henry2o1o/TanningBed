@@ -456,16 +456,16 @@ public class MainActivity extends Activity {
     }
     private double updatePvInputValues(JSONObject scene){
         JSONObject live=new JSONObject();if(!chartDeviceSn.isEmpty())try{live=new JSONObject(getSharedPreferences("cloud_session",MODE_PRIVATE).getString("mqtt_device_"+chartDeviceSn,"{}"));}catch(Exception ignored){}
-        double inputTotal=0;boolean hasInputReading=false;
+        double inputTotal=0;
         for(int channel=1;channel<=4;channel++){
             String suffix=String.valueOf(channel);double watts=findNumeric(scene,"solar_power_"+suffix,"pv_"+suffix+"_power","pv"+suffix+"_power","pv_power_"+suffix,"photovoltaic_power_"+suffix,"pv_input_power_"+suffix);double amps=findNumeric(scene,"solar_current_"+suffix,"pv_"+suffix+"_current","pv"+suffix+"_current","pv_current_"+suffix,"photovoltaic_current_"+suffix,"pv_input_current_"+suffix);
             double liveWatts=findNumeric(live,"pv_"+suffix+"_power","pv"+suffix+"_power");if(Double.isFinite(liveWatts)&&liveWatts>=0&&liveWatts<=5000)watts=liveWatts;
             double liveAmps=findNumeric(live,"pv_"+suffix+"_current","pv"+suffix+"_current");if(Double.isFinite(liveAmps)&&liveAmps>=0&&liveAmps<=50)amps=liveAmps;
-            if(Double.isFinite(watts)&&watts>=0&&watts<=5000){inputTotal+=watts;hasInputReading=true;}
+            if(Double.isFinite(watts)&&watts>=0&&watts<=5000)inputTotal+=watts;
             if(pvInputPower[channel-1]!=null)pvInputPower[channel-1].setText(Double.isFinite(watts)&&watts>=0&&watts<=5000?String.format(Locale.GERMANY,"%.0f W",watts):"— W");
             if(pvInputCurrent[channel-1]!=null)pvInputCurrent[channel-1].setText(Double.isFinite(amps)&&amps>=0&&amps<=50?String.format(Locale.GERMANY,"%.2f A",amps):"— A");
         }
-        return hasInputReading?inputTotal:Double.NaN;
+        return inputTotal;
     }
     private double findNumeric(JSONObject object,String... names){if(object==null)return Double.NaN;for(String name:names){String wanted=name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");java.util.Iterator<String> keys=object.keys();while(keys.hasNext()){String key=keys.next();Object value=object.opt(key);if(key.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","").equals(wanted)&&value!=null&&!JSONObject.NULL.equals(value)){double n=parseNumber(String.valueOf(value),Double.NaN);if(Double.isFinite(n))return n;}}}java.util.Iterator<String> keys=object.keys();while(keys.hasNext()){Object value=object.opt(keys.next());if(value instanceof JSONObject){double n=findNumeric((JSONObject)value,names);if(Double.isFinite(n))return n;}else if(value instanceof JSONArray){JSONArray array=(JSONArray)value;for(int i=0;i<array.length();i++){JSONObject child=array.optJSONObject(i);if(child!=null){double n=findNumeric(child,names);if(Double.isFinite(n))return n;}}}}return Double.NaN;}
     private LinearLayout card(LinearLayout parent,int topMargin){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(17),dp(16),dp(17),dp(16));c.setBackground(glassShape(22,BLUE));if(Build.VERSION.SDK_INT>=21)c.setElevation(dp(darkTheme?7:2));if(darkTheme&&Build.VERSION.SDK_INT>=28){c.setOutlineAmbientShadowColor(Color.argb(80,42,190,255));c.setOutlineSpotShadowColor(Color.argb(105,42,190,255));}LinearLayout.LayoutParams p=params(-1,-2);p.topMargin=dp(topMargin);parent.addView(c,p);return c;}
