@@ -70,7 +70,7 @@ final class AnkerMqttLiveClient {
         for(int i=0;i<devices.length();i++){
             JSONObject d=devices.optJSONObject(i); if(d==null)continue;
             String pn=first(d,"device_pn","product_code","device_model").toUpperCase(Locale.ROOT);
-            if(!pn.equals("AE103")&&!pn.equals("A17X8")&&!pn.equals("AE1X0"))continue;
+            if(!pn.equals("AE103")&&!pn.equals("A17X8")&&!pn.equals("AE1X0")&&!pn.equals("AS220"))continue;
             String sn=first(d,"device_sn","sn"); if(sn.isEmpty())continue;
             supported.add(d);
             byte[] topic=("dt/"+appName+"/"+pn+"/"+sn+"/#").getBytes(StandardCharsets.UTF_8);ByteBuffer body=ByteBuffer.allocate(2+2+topic.length+1).order(ByteOrder.BIG_ENDIAN);body.putShort((short)1).putShort((short)topic.length).put(topic).put((byte)0);writePacket(0x82,body.array());
@@ -116,6 +116,7 @@ final class AnkerMqttLiveClient {
     }
 
     private Map<String,Double> decode(byte[] b,String pn){
+        if(pn.equals("AS220"))return decodeS2000(b);
         if(b.length<12||(b[0]&255)!=0xff||(b[1]&255)!=0x09)return Collections.emptyMap();
         int type=((b[7]&255)<<8)|(b[8]&255); if(type!=0x0405&&type!=0x040a&&type!=0x0408&&type!=0x0420)return Collections.emptyMap();
         HashMap<String,Double> out=new HashMap<>();int i=9,end=b.length-1;
@@ -133,6 +134,23 @@ final class AnkerMqttLiveClient {
         }
         return out;
     }
+    private Map<String,Double> decodeS2000(byte[] b){
+        if(b.length<12||(b[0]&255)!=0xff||(b[1]&255)!=0x09||(((b[7]&255)<<8)|(b[8]&255))!=0x0421)return Collections.emptyMap();
+        HashMap<Integer,byte[]> tags=new HashMap<>();int i=9,end=b.length-1;
+        while(i+2<=end){int id=b[i++]&255,len=b[i++]&255;if(len<1||i+len>end)break;byte[] value=java.util.Arrays.copyOfRange(b,i,i+len);tags.put(id,value);i+=len;}
+        HashMap<String,Double> out=new HashMap<>();byte[] a6=tags.get(0xa6),a7=tags.get(0xa7),aa=tags.get(0xaa),a8=tags.get(0xa8),a5=tags.get(0xa5);
+        putS2000U16(out,"power",a6,1);putS2000U16(out,"ac_output_power",a7,2);putS2000U16(out,"usb_output_power",aa,2);
+        putS2000U16(out,"ac_input_power",a6,3);if(!out.containsKey("ac_input_power"))putS2000U16(out,"ac_input_power",a7,5);
+        putS2000U16(out,"dc_input_power",a6,5);if(!out.containsKey("dc_input_power"))putS2000U16(out,"dc_input_power",a8,2);
+        putS2000U16(out,"input_power",a6,12);
+        if(!out.containsKey("power")&&(out.containsKey("ac_output_power")||out.containsKey("usb_output_power")))out.put("power",(out.containsKey("ac_output_power")?out.get("ac_output_power"):0)+(out.containsKey("usb_output_power")?out.get("usb_output_power"):0));
+        if(!out.containsKey("input_power")&&(out.containsKey("ac_input_power")||out.containsKey("dc_input_power")))out.put("input_power",(out.containsKey("ac_input_power")?out.get("ac_input_power"):0)+(out.containsKey("dc_input_power")?out.get("dc_input_power"):0));
+        if(a5!=null){double temp=a5.length>1?(byte)a5[1]:Double.NaN,soc=s2000U8(a5,3);if(Double.isFinite(temp))out.put("temperature",temp);if(Double.isFinite(soc)&&soc<=100)out.put("battery_percent",soc);}
+        putS2000U8(out,"ac_input_connected",a6,11);return out;
+    }
+    private void putS2000U16(Map<String,Double> out,String key,byte[] bytes,int index){if(bytes==null)return;int offset=index*2;if(offset+1>=bytes.length)return;out.put(key,(double)(((bytes[offset]&255)|((bytes[offset+1]&255)<<8))));}
+    private double s2000U8(byte[] bytes,int index){return bytes!=null&&index>=0&&index<bytes.length?(bytes[index]&255):Double.NaN;}
+    private void putS2000U8(Map<String,Double> out,String key,byte[] bytes,int index){double value=s2000U8(bytes,index);if(Double.isFinite(value))out.put(key,value);}
     private String fieldName(String pn,int type,String key){
         if(pn.equals("A17X8")){switch(key){case "a4":return "switch_state";case "a8":return "voltage";case "a9":return "current";case "aa":return "power";case "ab":return "output_energy";case "fe":return "timestamp";}}
         if(pn.equals("AE1X0")){switch(key){case "a8":return "grid_power_signed_l1";case "a9":return "grid_power_signed_l2";case "aa":return "grid_power_signed_l3";case "ab":return "grid_power_signed";case "ac":return "voltage_l1";case "ad":return "voltage_l2";case "ae":return "voltage_l3";case "af":return "current_l1";case "b0":return "current_l2";case "b1":return "current_l3";case "b2":return "grid_export_energy";case "b3":return "grid_import_energy";}}
