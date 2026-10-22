@@ -10,10 +10,14 @@ android {
         applicationId 'de.codex.solarbanklive'
         minSdk 26
         targetSdk 35
-        versionCode 89
-        versionName '1.88'
+        versionCode 90
+        versionName '1.89'
     }
 
     buildFeatures { buildConfig true }
 
+}
+
+dependencies {
+    implementation 'androidx.car.app:app:1.7.0'
 }
