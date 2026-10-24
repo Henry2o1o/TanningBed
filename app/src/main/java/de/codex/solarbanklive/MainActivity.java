@@ -241,7 +241,7 @@ public class MainActivity extends Activity {
 
     private void keepSyncing(String siteId){
         if(cloudClient==null||siteId==null||siteId.isEmpty())return;
-        getSharedPreferences("cloud_session",MODE_PRIVATE).edit().putString("site_id",siteId).putString("site_name",siteNames.getOrDefault(siteId,"Solarbank-System")).putString("site_type_"+siteId,siteTypes.getOrDefault(siteId,"")).apply();
+        getSharedPreferences("cloud_session",MODE_PRIVATE).edit().putString("site_id",siteId).putString("site_type_"+siteId,siteTypes.getOrDefault(siteId,"")).apply();
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},REQUEST_NOTIFICATIONS);return;}
         startSyncService(siteId);
     }
