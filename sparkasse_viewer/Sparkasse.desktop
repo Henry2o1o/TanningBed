@@ -1,0 +1,11 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Sparkasse
+Comment=Kontoauszüge lokal und nur lesend ansehen
+Exec=sh -c 'cd -- "$(dirname -- "$1")" && exec ./Start_Sparkasse.sh' sh %k
+Icon=sparkasse
+Terminal=false
+Categories=Office;Finance;
+StartupNotify=true
